@@ -3,6 +3,7 @@ package com.example.projet5a;
 import Entities.Center;
 import Entities.City;
 import JPA.ICenter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,7 +24,8 @@ public class Projet5AApplication {
     @Bean
     CommandLineRunner runner(ICenter icenter){
         return args -> {
-            icenter.save(new Center("CHU",new City("Nancy",54500L)));
+            City city = new City("Nancy",54500L);
+            icenter.save(new Center("CHU",city));
         };
     }
 }

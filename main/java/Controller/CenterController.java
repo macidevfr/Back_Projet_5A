@@ -10,13 +10,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 
 public class CenterController {
-    @Autowired
-    private  ICenter iCentrer;
+
+    private  ICenter iCenter;
+
+    public CenterController(ICenter iCenter) {
+        this.iCenter = iCenter;
+    }
 
 
     @GetMapping("/center")
     public ResponseEntity getAllCenters(){
-        return ResponseEntity.ok(this.iCentrer.findAll());  //reponse 200
+        return ResponseEntity.ok(this.iCenter.findAll());  //reponse 200
     }
 
 

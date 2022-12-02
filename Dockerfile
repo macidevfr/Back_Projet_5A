@@ -1,3 +1,9 @@
-FROM openjdk:8-jdk-alpine
-COPY covidApp/build/libs/covidApp-0.0.1-SNAPSHOT.jar covidApp/build/libs/covidApp-0.0.1-SNAPSHOT.jar
-ENTRYPOINT ["java","-jar","/covidApp-0.0.1-SNAPSHOT.jar"]
+FROM gradle:jdk as gradleimage
+COPY covidApp /home/gradle/source
+WORKDIR /home/gradle/source
+RUN gradle build -x test
+
+FROM openjdk:jre-slim
+COPY --from=gradleimage /home/gradle/source/build/libs/covidApp-0.0.1-SNAPSHOT.jar /app/
+WORKDIR /app
+ENTRYPOINT ["java", "-jar", "covidApp-0.0.1-SNAPSHOT.jar"]

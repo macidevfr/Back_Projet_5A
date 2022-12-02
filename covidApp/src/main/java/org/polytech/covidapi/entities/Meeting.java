@@ -1,13 +1,16 @@
 package org.polytech.covidapi.entities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.polytech.covidapi.user.domain.User;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.util.Date;
 
-@FieldDefaults(level= AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -17,20 +20,16 @@ public class Meeting {
     @Id
     @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    Long         id;
+    Long id;
     @ManyToOne
-    Center       center;
-    @JsonFormat(pattern="dd/MM/yyyy")
-    Date         appointment;
-    String       nom,prenom,mail;
-    Boolean      vaccinated = false;
+    Center center;
+    @ManyToOne
+    @JsonIgnoreProperties("meetings")
+    User user;
+    @JsonFormat(pattern = "dd/MM/yyyy")
+    LocalDate appointment;
+    @Column(name = "is_done")
+    Boolean is_done = false;
 
-    public Meeting(Center center, Date appointment, String nom, String prenom, String mail, Boolean vaccinated) {
-        this.center         = center;
-        this.appointment    = appointment;
-        this.nom            = nom;
-        this.prenom         = prenom;
-        this.mail           = mail;
-        this.vaccinated     = vaccinated;
-    }
+
 }

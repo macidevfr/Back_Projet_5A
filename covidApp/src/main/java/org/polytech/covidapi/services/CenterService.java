@@ -18,6 +18,7 @@ public class CenterService {
         this.iCity = iCity;
     }
 
+
     public List<Center> getAllCenters() {
         return this.iCenter.findAll();
     }
@@ -27,9 +28,12 @@ public class CenterService {
         return this.iCenter.findAllByNameContaining(name);
     }
 
-    public Center addCenter(String name, Long cityId) {
+    public Center addCenter(String name, Long cityId, String address, String phone, String email) {
         Center center = new Center();
         center.setName(name);
+        center.setAddress(address);
+        center.setPhone(phone);
+        center.setEmail(email);
         center.setCity(this.iCity.findById(cityId).orElse(null));
 
         return this.iCenter.save(center);

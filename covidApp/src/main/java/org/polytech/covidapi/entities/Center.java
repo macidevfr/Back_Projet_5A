@@ -25,8 +25,10 @@ public class Center {
     @JoinColumn(name = "city_id")
     @JsonIgnoreProperties("centres")
     City city;
-    @OneToMany(mappedBy = "center")
-    List<User> usersList;
+    String address;
+    String phone;
+    String email;
+
 
     public Center(String name, City city) {
         this.name = name;

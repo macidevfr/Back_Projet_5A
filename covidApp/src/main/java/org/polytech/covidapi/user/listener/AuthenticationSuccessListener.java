@@ -1,5 +1,6 @@
 package org.polytech.covidapi.user.listener;
 
+import org.polytech.covidapi.user.domain.User;
 import org.polytech.covidapi.user.domain.UserPrincipal;
 import org.polytech.covidapi.user.service.LoginAttemptService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthenticationSuccessListener {
-    private final LoginAttemptService loginAttemptService;
+    private LoginAttemptService loginAttemptService;
 
     @Autowired
     public AuthenticationSuccessListener(LoginAttemptService loginAttemptService) {

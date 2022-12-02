@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import static java.util.Arrays.stream;
 
 public class UserPrincipal implements UserDetails {
-    private final User user;
+    private User user;
 
     public UserPrincipal(User user) {
         this.user = user;
@@ -28,7 +28,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return null;
+        return this.user.getUsername();
     }
 
     @Override

@@ -13,7 +13,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class LoginAttemptService {
     private static final int MAXIMUM_NUMBER_OF_ATTEMPTS = 5;
     private static final int ATTEMPT_INCREMENT = 1;
-    private final LoadingCache<String, Integer> loginAttemptCache;
+    private LoadingCache<String, Integer> loginAttemptCache;
 
     public LoginAttemptService() {
         super();
@@ -29,19 +29,19 @@ public class LoginAttemptService {
         loginAttemptCache.invalidate(username);
     }
 
-    public void addUserToLoginAttemptCache(String email) {
+    public void addUserToLoginAttemptCache(String username) {
         int attempts = 0;
         try {
-            attempts = ATTEMPT_INCREMENT + loginAttemptCache.get(email);
+            attempts = ATTEMPT_INCREMENT + loginAttemptCache.get(username);
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        loginAttemptCache.put(email, attempts);
+        loginAttemptCache.put(username, attempts);
     }
 
-    public boolean hasExceededMaxAttempts(String email) {
+    public boolean hasExceededMaxAttempts(String username) {
         try {
-            return loginAttemptCache.get(email) >= MAXIMUM_NUMBER_OF_ATTEMPTS;
+            return loginAttemptCache.get(username) >= MAXIMUM_NUMBER_OF_ATTEMPTS;
         } catch (ExecutionException e) {
             e.printStackTrace();
         }

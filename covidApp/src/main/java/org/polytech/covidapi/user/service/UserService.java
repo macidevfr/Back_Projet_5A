@@ -1,34 +1,30 @@
 package org.polytech.covidapi.user.service;
 
 import org.polytech.covidapi.user.domain.User;
-import org.polytech.covidapi.user.exception.domain.EmailExistException;
-import org.polytech.covidapi.user.exception.domain.EmailNotFoundException;
-import org.polytech.covidapi.user.exception.domain.UserNotFoundException;
+import org.polytech.covidapi.user.exception.domain.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public interface UserService {
 
-    User register(String firstName, String lastName, String email, String password) throws UserNotFoundException, EmailExistException, MessagingException, UnsupportedEncodingException;
+    User register(String firstName, String lastName, String username, String email, String password) throws UserNotFoundException, UsernameExistException, EmailExistException, MessagingException;
 
     List<User> getUsers();
 
-    User findUserById(Long id);
-
-    User addNewUser(String firstName, String lastName, String email, String role, boolean isNonLocked, boolean isActive) throws UserNotFoundException,  EmailExistException, IOException;
-
-    User updateUser(String newFirstName, String newLastName, String newEmail, String role, boolean isNonLocked, boolean isActive) throws UserNotFoundException, EmailExistException, IOException;
+    User findUserByUsername(String username);
 
     User findUserByEmail(String email);
 
-    void deleteUser(Long id) throws IOException;
+    User addNewUser(String firstName, String lastName, String username, String email, String role, boolean isNonLocked, boolean isActive, MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException;
 
-    User loadUserById(Long id);
+    User updateUser(String currentUsername, String newFirstName, String newLastName, String newUsername, String newEmail, String role, boolean isNonLocked, boolean isActive, MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException;
 
-    void resetPassword(String password, Long id) throws MessagingException, EmailNotFoundException;
+    void deleteUser(String username) throws IOException;
 
-    void save(User user);
+    void resetPassword(String email) throws MessagingException, EmailNotFoundException;
+
+    User updateProfileImage(String username, MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException;
 }

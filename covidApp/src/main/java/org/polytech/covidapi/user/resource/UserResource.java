@@ -4,37 +4,42 @@ import org.polytech.covidapi.user.domain.HttpResponse;
 import org.polytech.covidapi.user.domain.User;
 import org.polytech.covidapi.user.domain.UserPrincipal;
 import org.polytech.covidapi.user.exception.ExceptionHandling;
-import org.polytech.covidapi.user.exception.domain.EmailExistException;
-import org.polytech.covidapi.user.exception.domain.EmailNotFoundException;
-import org.polytech.covidapi.user.exception.domain.UserNotFoundException;
+import org.polytech.covidapi.user.exception.domain.*;
 import org.polytech.covidapi.user.service.UserService;
 import org.polytech.covidapi.user.utility.JWTTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
+import static org.polytech.covidapi.user.constant.FileConstant.*;
 import static org.polytech.covidapi.user.constant.SecurityConstant.JWT_TOKEN_HEADER;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
 @RestController
-@RequestMapping(path = {"/user"})
+@RequestMapping(path = { "/", "/user"})
 public class UserResource extends ExceptionHandling {
-    public static final String PASSWORD_RESET = "Le mot de passe a bien été réinitialisé : ";
-    public static final String USER_DELETED_SUCCESSFULLY = "l'utilisateur a bien été supprimé";
-    private final AuthenticationManager authenticationManager;
-    private final UserService userService;
-    private final JWTTokenProvider jwtTokenProvider;
+    public static final String EMAIL_SENT = "An email with a new password was sent to: ";
+    public static final String USER_DELETED_SUCCESSFULLY = "User deleted successfully";
+    private AuthenticationManager authenticationManager;
+    private UserService userService;
+    private JWTTokenProvider jwtTokenProvider;
 
     @Autowired
     public UserResource(AuthenticationManager authenticationManager, UserService userService, JWTTokenProvider jwtTokenProvider) {
@@ -44,96 +49,98 @@ public class UserResource extends ExceptionHandling {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestParam("username") String email,
-                                      @RequestParam("password") String password) {
-        authenticate(email, password);
-        User loginUser = userService.findUserByEmail(email);
-        this.userService.save(loginUser);
+    public ResponseEntity<User> login(@RequestBody User user) {
+        authenticate(user.getUsername(), user.getPassword());
+        User loginUser = userService.findUserByUsername(user.getUsername());
         UserPrincipal userPrincipal = new UserPrincipal(loginUser);
         HttpHeaders jwtHeader = getJwtHeader(userPrincipal);
-        System.out.println("email"+ email);
-        return new ResponseEntity<>(loginUser, jwtHeader, OK);
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<User> logout(@RequestParam("id") Long id) {
-        User logoutUser = userService.findUserById(id);
-        this.userService.save(logoutUser);
-
-        return new ResponseEntity<>(logoutUser, OK);
-    }
-
-    @GetMapping("/getjwt/{id}")
-    public ResponseEntity<User> login(@PathVariable(value = "id") Long id) {
-        User loginUser = userService.findUserById(id);
-        UserPrincipal userPrincipal = new UserPrincipal(loginUser);
-        HttpHeaders jwtHeader = getJwtHeader(userPrincipal);
-        System.out.println("jwtH: "+jwtHeader);
         return new ResponseEntity<>(loginUser, jwtHeader, OK);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) throws UserNotFoundException, EmailExistException, MessagingException, UnsupportedEncodingException {
-        User newUser = userService.register(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPassword().replaceAll(" ", ""));
+    public ResponseEntity<User> register(@RequestBody User user) throws UserNotFoundException, UsernameExistException, EmailExistException, MessagingException {
+        User newUser = userService.register(user.getFirstName(), user.getLastName(), user.getUsername(), user.getEmail(), user.getPassword());
         return new ResponseEntity<>(newUser, OK);
     }
 
     @PostMapping("/add")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<User> addNewUser(@RequestParam("firstName") String firstName,
                                            @RequestParam("lastName") String lastName,
-                                           @RequestParam("id") String id,
+                                           @RequestParam("username") String username,
                                            @RequestParam("email") String email,
                                            @RequestParam("role") String role,
                                            @RequestParam("isActive") String isActive,
-                                           @RequestParam("isNonLocked") String isNonLocked)
-            throws UserNotFoundException, EmailExistException, IOException {
-        User newUser = userService.addNewUser(firstName, lastName, email, role, Boolean.parseBoolean(isNonLocked),
-                Boolean.parseBoolean(isActive));
+                                           @RequestParam("isNonLocked") String isNonLocked,
+                                           @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException {
+        User newUser = userService.addNewUser(firstName, lastName, username,email, role, Boolean.parseBoolean(isNonLocked), Boolean.parseBoolean(isActive), profileImage);
         return new ResponseEntity<>(newUser, OK);
     }
 
     @PostMapping("/update")
+    @PreAuthorize("hasAnyAuthority('user:write') or #currentUsername == authentication.name")
     public ResponseEntity<User> update(@RequestParam("currentUsername") String currentUsername,
                                        @RequestParam("firstName") String firstName,
                                        @RequestParam("lastName") String lastName,
+                                       @RequestParam("username") String username,
                                        @RequestParam("email") String email,
                                        @RequestParam("role") String role,
                                        @RequestParam("isActive") String isActive,
                                        @RequestParam("isNonLocked") String isNonLocked,
-                                       @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) throws UserNotFoundException, EmailExistException, IOException {
-        User updatedUser = userService.updateUser(firstName, lastName, email, role, Boolean.parseBoolean(isNonLocked), Boolean.parseBoolean(isActive));
+                                       @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException {
+        User updatedUser = userService.updateUser(currentUsername, firstName, lastName, username,email, role, Boolean.parseBoolean(isNonLocked), Boolean.parseBoolean(isActive), profileImage);
         return new ResponseEntity<>(updatedUser, OK);
     }
 
-    @GetMapping("/find/{id}")
-    public ResponseEntity<User> getUser(@PathVariable("id") Long id) {
-        User user = userService.findUserById(id);
+    @GetMapping("/find/{username}")
+    public ResponseEntity<User> getUser(@PathVariable("username") String username) {
+        User user = userService.findUserByUsername(username);
         return new ResponseEntity<>(user, OK);
     }
 
+    @PreAuthorize("hasAuthority('user:read')")
     @GetMapping("/list")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getUsers();
         return new ResponseEntity<>(users, OK);
     }
 
-    @GetMapping("/getbyid/{id}")
-    public ResponseEntity<User> getUserbyUsername(@PathVariable("id") Long id) {
-        User user = userService.findUserById(id);
+    @GetMapping("/resetpassword/{email}")
+    public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email) throws MessagingException, EmailNotFoundException {
+        userService.resetPassword(email);
+        return response(OK, EMAIL_SENT + email);
+    }
+
+    @DeleteMapping("/delete/{username}")
+    @PreAuthorize("hasAnyAuthority('user:delete') or #username == authentication.name")
+    public ResponseEntity<HttpResponse> deleteUser(@PathVariable("username") String username) throws IOException {
+        userService.deleteUser(username);
+        return response(OK, USER_DELETED_SUCCESSFULLY);
+    }
+
+    @PostMapping("/updateProfileImage")
+    public ResponseEntity<User> updateProfileImage(@RequestParam("username") String username, @RequestParam(value = "profileImage") MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException, NotAnImageFileException {
+        User user = userService.updateProfileImage(username, profileImage);
         return new ResponseEntity<>(user, OK);
     }
 
-    @GetMapping("/resetpassword/{id}/{password}")
-    public ResponseEntity<HttpResponse> resetPassword(@PathVariable("password") String password, @PathVariable("id") Long id) throws MessagingException, EmailNotFoundException {
-        userService.resetPassword(password, id);
-        return response(OK, PASSWORD_RESET + password);
+    @GetMapping(path = "/image/{username}/{fileName}", produces = IMAGE_JPEG_VALUE)
+    public byte[] getProfileImage(@PathVariable("username") String username, @PathVariable("fileName") String fileName) throws IOException {
+        return Files.readAllBytes(Paths.get(USER_FOLDER + username + FORWARD_SLASH + fileName));
     }
 
-    @DeleteMapping("/delete/{id}")
-    @Secured("ROLE_SUPER_ADMIN")
-    public ResponseEntity<HttpResponse> deleteUser(@PathVariable("id") Long id) throws IOException {
-        userService.deleteUser(id);
-        return response(OK, USER_DELETED_SUCCESSFULLY);
+    @GetMapping(path = "/image/profile/{username}", produces = IMAGE_JPEG_VALUE)
+    public byte[] getTempProfileImage(@PathVariable("username") String username) throws IOException {
+        URL url = new URL(TEMP_PROFILE_IMAGE_BASE_URL + username);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (InputStream inputStream = url.openStream()) {
+            int bytesRead;
+            byte[] chunk = new byte[1024];
+            while((bytesRead = inputStream.read(chunk)) > 0) {
+                byteArrayOutputStream.write(chunk, 0, bytesRead);
+            }
+        }
+        return byteArrayOutputStream.toByteArray();
     }
 
     private ResponseEntity<HttpResponse> response(HttpStatus httpStatus, String message) {
@@ -147,7 +154,7 @@ public class UserResource extends ExceptionHandling {
         return headers;
     }
 
-    private void authenticate(String id, String password) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(id, password));
+    private void authenticate(String username, String password) {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
     }
 }

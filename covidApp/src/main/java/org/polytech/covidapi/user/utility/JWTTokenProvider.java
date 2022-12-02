@@ -1,12 +1,12 @@
 package org.polytech.covidapi.user.utility;
 
-
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import org.apache.commons.lang3.StringUtils;
+import com.auth0.jwt.interfaces.JWTVerifier;
 import org.polytech.covidapi.user.domain.UserPrincipal;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,24 +15,22 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
-import static java.util.Arrays.stream;
 import static org.polytech.covidapi.user.constant.SecurityConstant.*;
+import static java.util.Arrays.*;
 
 @Component
 public class JWTTokenProvider {
 
+    private String secret = "'[a-zA-Z0-9._]^+$Guidelines89797987forAlphabeticalArraNumeralsandOtherSymbo$'";
 
-    private final String secret = "'[a-zA-Z0-9._]^+$Guidelines89797987forAlphabeticalArraNumeralsandOtherSymbo$'";
 
     public String generateJwtToken(UserPrincipal userPrincipal) {
         String[] claims = getClaimsFromUser(userPrincipal);
-        return JWT.create().withIssuer(MACI_DEV).withAudience(GET_ARRAYS_ADMINISTRATION)
+        return JWT.create().withIssuer(GET_ARRAYS_LLC).withAudience(GET_ARRAYS_ADMINISTRATION)
                 .withIssuedAt(new Date()).withSubject(userPrincipal.getUsername())
                 .withArrayClaim(AUTHORITIES, claims).withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes()));
@@ -74,7 +72,7 @@ public class JWTTokenProvider {
         JWTVerifier verifier;
         try {
             Algorithm algorithm = HMAC512(secret);
-            verifier = JWT.require(algorithm).withIssuer(MACI_DEV).build();
+            verifier = JWT.require(algorithm).withIssuer(GET_ARRAYS_LLC).build();
         }catch (JWTVerificationException exception) {
             throw new JWTVerificationException(TOKEN_CANNOT_BE_VERIFIED);
         }
@@ -86,8 +84,6 @@ public class JWTTokenProvider {
         for (GrantedAuthority grantedAuthority : user.getAuthorities()){
             authorities.add(grantedAuthority.getAuthority());
         }
-        System.out.println("auto: "+authorities);
-        System.out.println("userAuth: "+user.getAuthorities());
         return authorities.toArray(new String[0]);
     }
 }

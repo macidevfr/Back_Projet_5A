@@ -1,6 +1,10 @@
 package org.polytech.covidapi.user.filter;
 
 import org.polytech.covidapi.user.utility.JWTTokenProvider;
+
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.OK;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,10 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-import static org.polytech.covidapi.user.constant.SecurityConstant.OPTIONS_HTTP_METHOD;
-import static org.polytech.covidapi.user.constant.SecurityConstant.TOKEN_PREFIX;
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpStatus.OK;
+import static org.polytech.covidapi.user.constant.SecurityConstant.*;
 
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {

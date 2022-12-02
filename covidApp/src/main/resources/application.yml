@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/Covid
-    username: postgres
-    password: fullstack
+    url: jdbc:postgresql://db-project-9gcdfz:5432/Covid
+    username: postgres-user
+    password: yOpU83HXoaa42CvfdQMqbsZes1OuAs
   jpa:
     show-sql: true
     hibernate:
@@ -15,4 +15,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   liquibase:
     enabled: false
+
+
 
